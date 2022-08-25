@@ -1,4 +1,4 @@
-;;; test-runner.el -- Builds unit test runners -*- lexical-binding: t; -*-
+;;; test-runner.el --- Builds unit test runners -*- lexical-binding: t; -*-
 
 ;; Author: Damien Merenne
 ;; URL: https://github.com/canatella/test-runner
