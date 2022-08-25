@@ -1,4 +1,4 @@
-;;; test-runner-ert.el -- Test runner for ert -*- lexical-binding: t; -*-
+;;; test-runner-ert.el --- Test runner for ert -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020 Damien Merenne <dam@cosinux.org>
 
