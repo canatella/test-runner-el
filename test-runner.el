@@ -343,12 +343,14 @@ directory, use `add-dir-local-variable' to configure it."
   (when test-runner-key-prefix (local-set-key test-runner-key-prefix test-runner-local-map))
   (if test-runner-mode (test-runner-setup) (test-runner-teardown)))
 
-(defmacro test-runner-define-compilation-mode (name)
+(defmacro test-runner-define-compilation-mode (name &rest body)
   "Defines a new compilation mode for test backend with NAME."
+  (declare (indent 1))
   (let ((compilation-mode-name (intern (format "test-runner-%s-compilation-mode" name)))
         (compilation-buffer-name (symbol-name name)))
     `(define-compilation-mode ,compilation-mode-name ,compilation-buffer-name
        ,(format "Major mode for %s test logs." name)
+       ,@body
        (setq-local test-runner-backend (quote ,name))
        (test-runner-mode))))
 
