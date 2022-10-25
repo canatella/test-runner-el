@@ -44,6 +44,7 @@
   :group 'test-runner)
 
 (defcustom test-runner-backend 'none "Default test runner backend to use." :type 'symbol)
+(put 'test-runner-backend 'safe-local-variable #'symbolp)
 
 (defcustom test-runner-backends '() "List of active test runner backends." :type '(list symbol))
 
@@ -202,35 +203,47 @@ passing arguments to it. The following method or
 (cl-defmethod test-runner-backend-exec-arguments-test-at-point ((_backend test-runner-backend-exec))
   "Should return the arguments to pass to binary to run test at point.")
 
+(cl-defmethod test-runner-backend-exec-environment-test-at-point ((_backend test-runner-backend-exec))
+  "Should return the environment to pass to binary to run test at point.")
+
 (cl-defmethod test-runner-backend-exec-arguments-test-file ((_backend test-runner-backend-exec))
   "Should return the arguments to pass to binary to run tests for current file.")
+
+(cl-defmethod test-runner-backend-exec-environment-test-file ((_backend test-runner-backend-exec))
+  "Should return the environment to pass to binary to run tests for current file.")
 
 (cl-defmethod test-runner-backend-exec-arguments-test-project ((_backend test-runner-backend-exec))
   "Should return the arguments to pass to binary to run tests for current project.")
 
-(cl-defmethod test-runner-backend-exec-command ((backend test-runner-backend-exec)
-                                                &rest arguments)
-  "Should return the command to run BACKEND tests with ARGUMENTS."
+(cl-defmethod test-runner-backend-exec-environment-test-project ((_backend test-runner-backend-exec))
+  "Should return the environment to pass to binary to run tests for current project.")
+
+(cl-defmethod test-runner-backend-exec-command ((backend test-runner-backend-exec) arguments environment)
+  "Should return the command to run BACKEND tests with ARGUMENTS and ENVIRONMENT."
   (let ((binary (test-runner-backend-exec-binary backend))
-        (arguments (seq-map #'shell-quote-argument (seq-filter #'identity arguments))))
-    (format "%s %s" binary (string-join arguments " "))))
+        (arguments (seq-map #'shell-quote-argument (seq-filter #'identity arguments)))
+        (environment (seq-map #'shell-quote-argument (seq-filter #'identity environment))))
+    (format "env %s %s %s" (string-join environment " ") binary (string-join arguments " "))))
 
 (cl-defmethod test-runner-backend-test-at-point ((backend test-runner-backend-exec))
   "Return the command to run BACKEND test at point."
-  (if-let ((arguments (test-runner-backend-exec-arguments-test-at-point backend)))
-      (apply #'test-runner-backend-exec-command backend arguments)))
+  (if-let ((arguments (test-runner-backend-exec-arguments-test-at-point backend))
+           (environment (test-runner-backend-exec-environment-test-at-point backend)))
+      (funcall #'test-runner-backend-exec-command backend arguments environment)))
 
 (cl-defmethod test-runner-backend-test-file ((backend test-runner-backend-exec))
   "Return the command to run BACKEND tests for current file."
-  (if-let ((arguments (test-runner-backend-exec-arguments-test-file backend)))
-      (apply #'test-runner-backend-exec-command backend
-             arguments)))
+  (if-let ((arguments (test-runner-backend-exec-arguments-test-file backend))
+           (environment (test-runner-backend-exec-environment-test-file backend)))
+      (funcall #'test-runner-backend-exec-command backend
+               arguments environment)))
 
 (cl-defmethod test-runner-backend-test-project ((backend test-runner-backend-exec))
   "Return the command to run BACKEND tests for current project."
-  (if-let ((arguments (test-runner-backend-exec-arguments-test-project backend)))
-      (apply #'test-runner-backend-exec-command backend
-             arguments)))
+  (if-let ((arguments (test-runner-backend-exec-arguments-test-project backend))
+           (environment (test-runner-backend-exec-environment-test-project backend)))
+      (funcall #'test-runner-backend-exec-command backend
+             arguments environment)))
 
 (defclass test-runner-backend-compile (test-runner-backend-exec) ()
   "Test runner backend based on the `exec' backend but which also
@@ -334,7 +347,7 @@ See `test-runner-backend-exec'.")
   "Keymap for running tests.")
 
 (define-minor-mode test-runner-mode
-  "Run test in cussent buffer using `test-runner-backend'.
+  "Run test in current buffer using `test-runner-backend'.
 
 You can customize which backend to use by setting
 `test-runner-backend'.  For setting it up for a project or a
